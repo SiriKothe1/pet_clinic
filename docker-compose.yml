@@ -1,0 +1,21 @@
+services:
+  petclinic:
+    build: .
+    container_name: petclinic
+    ports:
+      - "8000:8000"
+    volumes:
+      - petclinic_data:/data
+    environment:
+      - DATABASE_URL=sqlite:////data/petclinic.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  petclinic_data:
+    driver: local
