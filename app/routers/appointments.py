@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -8,19 +9,23 @@ from app.models.pet import Pet
 from app.models.vet import Vet
 from app.schemas.appointment import AppointmentCreate, AppointmentResponse
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/appointments", tags=["Appointments"])
 
 
 @router.post("/", response_model=AppointmentResponse, status_code=status.HTTP_201_CREATED)
 def book_appointment(appt: AppointmentCreate, db: Session = Depends(get_db)):
     if not db.query(Pet).filter(Pet.id == appt.pet_id).first():
+        logger.warning(f"Failed to book appointment: Pet {appt.pet_id} not found")
         raise HTTPException(status_code=404, detail="Pet not found")
     if not db.query(Vet).filter(Vet.id == appt.vet_id).first():
+        logger.warning(f"Failed to book appointment: Vet {appt.vet_id} not found")
         raise HTTPException(status_code=404, detail="Vet not found")
     db_appt = Appointment(**appt.model_dump())
     db.add(db_appt)
     db.commit()
     db.refresh(db_appt)
+    logger.info(f"Booked appointment with ID: {db_appt.id} for pet: {appt.pet_id} with vet: {appt.vet_id}")
     return db_appt
 
 
@@ -41,6 +46,7 @@ def list_appointments(
 def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
     appt = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appt:
+        logger.warning(f"Appointment not found: {appointment_id}")
         raise HTTPException(status_code=404, detail="Appointment not found")
     return appt
 
@@ -49,12 +55,15 @@ def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
 def cancel_appointment(appointment_id: int, db: Session = Depends(get_db)):
     appt = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appt:
+        logger.warning(f"Appointment not found for cancellation: {appointment_id}")
         raise HTTPException(status_code=404, detail="Appointment not found")
     if appt.status != AppointmentStatus.scheduled:
+        logger.warning(f"Failed to cancel appointment {appointment_id}: Status is {appt.status}")
         raise HTTPException(status_code=400, detail=f"Cannot cancel a {appt.status} appointment")
     appt.status = AppointmentStatus.cancelled
     db.commit()
     db.refresh(appt)
+    logger.info(f"Cancelled appointment with ID: {appointment_id}")
     return appt
 
 
@@ -62,10 +71,13 @@ def cancel_appointment(appointment_id: int, db: Session = Depends(get_db)):
 def complete_appointment(appointment_id: int, db: Session = Depends(get_db)):
     appt = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appt:
+        logger.warning(f"Appointment not found for completion: {appointment_id}")
         raise HTTPException(status_code=404, detail="Appointment not found")
     if appt.status != AppointmentStatus.scheduled:
+        logger.warning(f"Failed to complete appointment {appointment_id}: Status is {appt.status}")
         raise HTTPException(status_code=400, detail=f"Cannot complete a {appt.status} appointment")
     appt.status = AppointmentStatus.completed
     db.commit()
     db.refresh(appt)
+    logger.info(f"Completed appointment with ID: {appointment_id}")
     return appt
