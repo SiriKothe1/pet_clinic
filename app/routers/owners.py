@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
@@ -8,17 +9,20 @@ from app.models.pet import Pet
 from app.schemas.owner import OwnerCreate, OwnerUpdate, OwnerResponse
 from app.schemas.pet import PetResponse
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/owners", tags=["Owners"])
 
 
 @router.post("/", response_model=OwnerResponse, status_code=status.HTTP_201_CREATED)
 def create_owner(owner: OwnerCreate, db: Session = Depends(get_db)):
     if db.query(Owner).filter(Owner.email == owner.email).first():
+        logger.warning(f"Failed to create owner: Email {owner.email} already registered")
         raise HTTPException(status_code=400, detail="Email already registered")
     db_owner = Owner(**owner.model_dump())
     db.add(db_owner)
     db.commit()
     db.refresh(db_owner)
+    logger.info(f"Created owner with ID: {db_owner.id}")
     return db_owner
 
 
@@ -31,6 +35,7 @@ def list_owners(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 def get_owner(owner_id: int, db: Session = Depends(get_db)):
     owner = db.query(Owner).filter(Owner.id == owner_id).first()
     if not owner:
+        logger.warning(f"Owner not found: {owner_id}")
         raise HTTPException(status_code=404, detail="Owner not found")
     return owner
 
@@ -39,11 +44,13 @@ def get_owner(owner_id: int, db: Session = Depends(get_db)):
 def update_owner(owner_id: int, updates: OwnerUpdate, db: Session = Depends(get_db)):
     owner = db.query(Owner).filter(Owner.id == owner_id).first()
     if not owner:
+        logger.warning(f"Owner not found for update: {owner_id}")
         raise HTTPException(status_code=404, detail="Owner not found")
     for field, value in updates.model_dump(exclude_none=True).items():
         setattr(owner, field, value)
     db.commit()
     db.refresh(owner)
+    logger.info(f"Updated owner with ID: {owner_id}")
     return owner
 
 
@@ -51,9 +58,11 @@ def update_owner(owner_id: int, updates: OwnerUpdate, db: Session = Depends(get_
 def delete_owner(owner_id: int, db: Session = Depends(get_db)):
     owner = db.query(Owner).filter(Owner.id == owner_id).first()
     if not owner:
+        logger.warning(f"Owner not found for deletion: {owner_id}")
         raise HTTPException(status_code=404, detail="Owner not found")
     db.delete(owner)
     db.commit()
+    logger.info(f"Deleted owner with ID: {owner_id}")
 
 
 @router.get("/{owner_id}/pets", response_model=List[PetResponse])

@@ -1,6 +1,7 @@
 """
 Seed script — inserts demo data on first startup (skips if data already exists).
 """
+import logging
 from datetime import date, datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 
@@ -10,10 +11,15 @@ from app.models.vet import Vet
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.medical_record import MedicalRecord
 
+logger = logging.getLogger(__name__)
+
 
 def seed(db: Session) -> None:
     if db.query(Owner).count() > 0:
+        logger.info("Database already contains data, skipping seed.")
         return  # already seeded
+
+    logger.info("Seeding database with demo data...")
 
     # --- Owners ---
     alice = Owner(first_name="Alice", last_name="Walker", email="alice@example.com",
@@ -73,4 +79,4 @@ def seed(db: Session) -> None:
                          notes="X-ray ruled out fracture. Follow-up in 2 weeks.")
     db.add_all([rec1, rec2])
     db.commit()
-    print("✅ Database seeded with demo data.")
+    logger.info("✅ Database seeded with demo data.")
