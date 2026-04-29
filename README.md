@@ -19,6 +19,7 @@ A demo **Pet Clinic REST API** built with:
 - **Vets & Appointments**: Schedule, complete, or cancel appointments with veterinarians.
 - **Medical Records**: Maintain detailed medical history for completed appointments.
 - **Logging**: Comprehensive logging for debugging and monitoring.
+- **Lost & Found**: Community platform to report lost or found pets.
 
 ---
 
@@ -55,6 +56,8 @@ owners ──< pets ──< appointments >── vets
            └──< vaccinations
                         │
                   medical_records
+
+lost_found_pets
 ```
 
 | Table | Description |
@@ -65,6 +68,7 @@ owners ──< pets ──< appointments >── vets
 | `vets` | Veterinarians with specialties |
 | `appointments` | Scheduled visits — statuses: `scheduled`, `completed`, `cancelled` |
 | `medical_records` | One record per completed appointment |
+| `lost_found_pets` | Reports for lost or found pets |
 
 ---
 
@@ -89,6 +93,9 @@ owners ──< pets ──< appointments >── vets
 | `POST` | `/owners/` | Create owner |
 | `GET` | `/owners/` | List all owners |
 | `GET` | `/owners/{id}/pets` | List pets for an owner |
+| `POST` | `/lost-found/` | Create a lost/found report |
+| `GET` | `/lost-found/` | List all reports |
+| `PUT` | `/lost-found/{id}` | Update a report (e.g. resolve) |
 
 *(See Swagger UI at `/docs` for full list of Vet, Appointment, and Medical Record endpoints)*
 
@@ -137,6 +144,13 @@ curl -X PUT http://localhost:8000/appointments/1/complete
 curl -X POST http://localhost:8000/medical-records/ \
   -H "Content-Type: application/json" \
   -d '{"appointment_id": 1, "diagnosis": "Healthy", "treatment": "None", "notes": "Heart rate normal."}'
+```
+
+### 6. Report a Lost Pet
+```bash
+curl -X POST http://localhost:8000/lost-found/ \
+  -H "Content-Type: application/json" \
+  -d '{"report_type": "LOST", "pet_name": "Luna", "species": "cat", "location": "Central Park", "contact_info": "Emma: 555-0122"}'
 ```
 
 ---

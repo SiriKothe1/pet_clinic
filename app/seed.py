@@ -10,6 +10,7 @@ from app.models.pet import Pet
 from app.models.vet import Vet
 from app.models.appointment import Appointment, AppointmentStatus
 from app.models.medical_record import MedicalRecord
+from app.models.lost_found_pet import LostFoundPet
 
 logger = logging.getLogger(__name__)
 
@@ -78,5 +79,29 @@ def seed(db: Session) -> None:
                          treatment="Anti-inflammatory medication for 7 days, rest",
                          notes="X-ray ruled out fracture. Follow-up in 2 weeks.")
     db.add_all([rec1, rec2])
+    db.flush()
+
+    # --- Lost & Found ---
+    lost_report = LostFoundPet(
+        report_type="LOST",
+        pet_name="Max",
+        species="dog",
+        breed="Beagle",
+        description="Wearing a blue collar. Very friendly but easily spooked.",
+        location="Park near 5th and Main",
+        contact_info="John Doe: 555-0199",
+        date_reported=datetime.now() - timedelta(days=2)
+    )
+    found_report = LostFoundPet(
+        report_type="FOUND",
+        species="cat",
+        breed="Tabby",
+        description="Found wandering in my backyard. No collar.",
+        location="Westside residential area",
+        contact_info="Sarah: 555-0244",
+        date_reported=datetime.now() - timedelta(days=1)
+    )
+    db.add_all([lost_report, found_report])
+
     db.commit()
     logger.info("✅ Database seeded with demo data.")
