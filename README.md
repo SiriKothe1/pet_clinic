@@ -96,31 +96,47 @@ owners ──< pets ──< appointments >── vets
 
 ## Example Requests
 
-### Managing Pets
+### 1. Create an Owner
 ```bash
-# Create a new pet for Owner ID 1
-curl -X POST http://localhost:8000/pets/ \
+curl -X POST http://localhost:8000/owners/ \
   -H "Content-Type: application/json" \
-  -d '{"name": "Buddy", "species": "Dog", "breed": "Golden Retriever", "owner_id": 1}'
-
-# List all pets
-curl http://localhost:8000/pets/
-
-# Update a pet's breed
-curl -X PUT http://localhost:8000/pets/1 \
-  -H "Content-Type: application/json" \
-  -d '{"breed": "Golden Retriever Booster"}'
+  -d '{"first_name": "John", "last_name": "Doe", "email": "john.doe@example.com", "phone": "555-0199", "address": "123 Main St"}'
 ```
 
-### Managing Vaccinations
+### 2. Add a Pet
 ```bash
-# Add a Rabies vaccination to Pet ID 1
+curl -X POST http://localhost:8000/pets/ \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Max", "species": "Dog", "breed": "Beagle", "date_of_birth": "2022-05-10", "owner_id": 1}'
+```
+
+### 3. Manage Vaccinations
+```bash
+# Add a vaccination
 curl -X POST http://localhost:8000/pets/1/vaccinations \
   -H "Content-Type: application/json" \
-  -d '{"name": "Rabies", "date_administered": "2024-01-01", "next_due_date": "2025-01-01"}'
+  -d '{"name": "Parvovirus", "date_administered": "2024-04-28", "next_due_date": "2025-04-28"}'
 
-# List all vaccinations for Pet ID 1
+# List vaccinations for a pet
 curl http://localhost:8000/pets/1/vaccinations
+```
+
+### 4. Schedule & Complete Appointments
+```bash
+# Book an appointment
+curl -X POST http://localhost:8000/appointments/ \
+  -H "Content-Type: application/json" \
+  -d '{"pet_id": 1, "vet_id": 1, "scheduled_at": "2024-06-15T10:30:00", "reason": "Routine Checkup"}'
+
+# Mark as completed
+curl -X PUT http://localhost:8000/appointments/1/complete
+```
+
+### 5. Add Medical Records
+```bash
+curl -X POST http://localhost:8000/medical-records/ \
+  -H "Content-Type: application/json" \
+  -d '{"appointment_id": 1, "diagnosis": "Healthy", "treatment": "None", "notes": "Heart rate normal."}'
 ```
 
 ---
