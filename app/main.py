@@ -19,8 +19,9 @@ import app.models.vet            # noqa: F401
 import app.models.appointment    # noqa: F401
 import app.models.medical_record # noqa: F401
 import app.models.vaccination    # noqa: F401
+import app.models.lost_found_pet # noqa: F401
 
-from app.routers import owners, pets, vets, appointments, medical_records
+from app.routers import owners, pets, vets, appointments, medical_records, lost_found
 from app.seed import seed
 
 
@@ -56,6 +57,7 @@ app.include_router(pets.router)
 app.include_router(vets.router)
 app.include_router(appointments.router)
 app.include_router(medical_records.router)
+app.include_router(lost_found.router)
 
 
 @app.get("/", include_in_schema=False)
