@@ -5,7 +5,9 @@ from typing import List
 from app.database import get_db
 from app.models.pet import Pet
 from app.models.owner import Owner
+from app.models.vaccination import Vaccination
 from app.schemas.pet import PetCreate, PetUpdate, PetResponse
+from app.schemas.vaccination import VaccinationCreate, VaccinationUpdate, VaccinationResponse
 
 router = APIRouter(prefix="/pets", tags=["Pets"])
 
@@ -52,4 +54,54 @@ def delete_pet(pet_id: int, db: Session = Depends(get_db)):
     if not pet:
         raise HTTPException(status_code=404, detail="Pet not found")
     db.delete(pet)
+    db.commit()
+
+
+@router.get("/{pet_id}/vaccinations", response_model=List[VaccinationResponse])
+def list_pet_vaccinations(pet_id: int, db: Session = Depends(get_db)):
+    pet = db.query(Pet).filter(Pet.id == pet_id).first()
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    return pet.vaccinations
+
+
+@router.post("/{pet_id}/vaccinations", response_model=VaccinationResponse, status_code=status.HTTP_201_CREATED)
+def add_pet_vaccination(pet_id: int, vaccination: VaccinationCreate, db: Session = Depends(get_db)):
+    pet = db.query(Pet).filter(Pet.id == pet_id).first()
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    db_vaccination = Vaccination(**vaccination.model_dump(), pet_id=pet_id)
+    db.add(db_vaccination)
+    db.commit()
+    db.refresh(db_vaccination)
+    return db_vaccination
+
+
+@router.put("/{pet_id}/vaccinations/{vaccination_id}", response_model=VaccinationResponse)
+def update_pet_vaccination(pet_id: int, vaccination_id: int, updates: VaccinationUpdate, db: Session = Depends(get_db)):
+    pet = db.query(Pet).filter(Pet.id == pet_id).first()
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    db_vaccination = db.query(Vaccination).filter(Vaccination.id == vaccination_id, Vaccination.pet_id == pet_id).first()
+    if not db_vaccination:
+        raise HTTPException(status_code=404, detail="Vaccination not found")
+    
+    for field, value in updates.model_dump(exclude_none=True).items():
+        setattr(db_vaccination, field, value)
+    
+    db.commit()
+    db.refresh(db_vaccination)
+    return db_vaccination
+
+
+@router.delete("/{pet_id}/vaccinations/{vaccination_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_pet_vaccination(pet_id: int, vaccination_id: int, db: Session = Depends(get_db)):
+    pet = db.query(Pet).filter(Pet.id == pet_id).first()
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    db_vaccination = db.query(Vaccination).filter(Vaccination.id == vaccination_id, Vaccination.pet_id == pet_id).first()
+    if not db_vaccination:
+        raise HTTPException(status_code=404, detail="Vaccination not found")
+    
+    db.delete(db_vaccination)
     db.commit()

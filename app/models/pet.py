@@ -15,3 +15,4 @@ class Pet(Base):
 
     owner = relationship("Owner", back_populates="pets")
     appointments = relationship("Appointment", back_populates="pet", cascade="all, delete-orphan")
+    vaccinations = relationship("Vaccination", back_populates="pet", cascade="all, delete-orphan")
