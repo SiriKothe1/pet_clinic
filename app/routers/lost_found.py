@@ -1,6 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from typing import List, Optional
 
 from app.database import get_db
@@ -13,12 +14,16 @@ router = APIRouter(prefix="/lost-found", tags=["Lost & Found"])
 
 @router.post("/", response_model=LostFoundPetResponse, status_code=status.HTTP_201_CREATED)
 def create_report(report: LostFoundPetCreate, db: Session = Depends(get_db)):
-    db_report = LostFoundPet(**report.model_dump())
-    db.add(db_report)
-    db.commit()
-    db.refresh(db_report)
-    logger.info(f"Created {report.report_type} report with ID: {db_report.id}")
-    return db_report
+    try:
+        db_report = LostFoundPet(**report.model_dump())
+        db.add(db_report)
+        db.commit()
+        db.refresh(db_report)
+        logger.info(f"Created {report.report_type} report with ID: {db_report.id}")
+        return db_report
+    except SQLAlchemyError as e:
+        logger.error(f"Error creating report: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/", response_model=List[LostFoundPetResponse])
@@ -29,47 +34,63 @@ def list_reports(
     limit: int = 100,
     db: Session = Depends(get_db)
 ):
-    query = db.query(LostFoundPet)
-    if report_type:
-        query = query.filter(LostFoundPet.report_type == report_type)
-    if is_resolved is not None:
-        query = query.filter(LostFoundPet.is_resolved == is_resolved)
-    
-    return query.offset(skip).limit(limit).all()
+    try:
+        query = db.query(LostFoundPet)
+        if report_type:
+            query = query.filter(LostFoundPet.report_type == report_type)
+        if is_resolved is not None:
+            query = query.filter(LostFoundPet.is_resolved == is_resolved)
+        
+        return query.offset(skip).limit(limit).all()
+    except SQLAlchemyError as e:
+        logger.error(f"Error listing reports: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.get("/{report_id}", response_model=LostFoundPetResponse)
 def get_report(report_id: int, db: Session = Depends(get_db)):
-    report = db.query(LostFoundPet).filter(LostFoundPet.id == report_id).first()
-    if not report:
-        logger.warning(f"Lost/Found report not found: {report_id}")
-        raise HTTPException(status_code=404, detail="Report not found")
-    return report
+    try:
+        report = db.query(LostFoundPet).filter(LostFoundPet.id == report_id).first()
+        if not report:
+            logger.warning(f"Lost/Found report not found: {report_id}")
+            raise HTTPException(status_code=404, detail="Report not found")
+        return report
+    except SQLAlchemyError as e:
+        logger.error(f"Error fetching report: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.put("/{report_id}", response_model=LostFoundPetResponse)
 def update_report(report_id: int, updates: LostFoundPetUpdate, db: Session = Depends(get_db)):
-    report = db.query(LostFoundPet).filter(LostFoundPet.id == report_id).first()
-    if not report:
-        logger.warning(f"Lost/Found report not found for update: {report_id}")
-        raise HTTPException(status_code=404, detail="Report not found")
-    
-    for field, value in updates.model_dump(exclude_none=True).items():
-        setattr(report, field, value)
-    
-    db.commit()
-    db.refresh(report)
-    logger.info(f"Updated report with ID: {report_id}")
-    return report
+    try:
+        report = db.query(LostFoundPet).filter(LostFoundPet.id == report_id).first()
+        if not report:
+            logger.warning(f"Lost/Found report not found for update: {report_id}")
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        for field, value in updates.model_dump(exclude_none=True).items():
+            setattr(report, field, value)
+        
+        db.commit()
+        db.refresh(report)
+        logger.info(f"Updated report with ID: {report_id}")
+        return report
+    except SQLAlchemyError as e:
+        logger.error(f"Error updating report: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_report(report_id: int, db: Session = Depends(get_db)):
-    report = db.query(LostFoundPet).filter(LostFoundPet.id == report_id).first()
-    if not report:
-        logger.warning(f"Lost/Found report not found for deletion: {report_id}")
-        raise HTTPException(status_code=404, detail="Report not found")
-    
-    db.delete(report)
-    db.commit()
-    logger.info(f"Deleted report with ID: {report_id}")
+    try:
+        report = db.query(LostFoundPet).filter(LostFoundPet.id == report_id).first()
+        if not report:
+            logger.warning(f"Lost/Found report not found for deletion: {report_id}")
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        db.delete(report)
+        db.commit()
+        logger.info(f"Deleted report with ID: {report_id}")
+    except SQLAlchemyError as e:
+        logger.error(f"Error deleting report: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
