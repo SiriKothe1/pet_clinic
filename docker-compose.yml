@@ -2,6 +2,7 @@ services:
   petclinic:
     build: .
     container_name: petclinic_v2
+    user: "${UID}:${GID}"
     ports:
       - "8000:8000"
     volumes:
