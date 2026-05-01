@@ -2,11 +2,11 @@ services:
   petclinic:
     build: .
     container_name: petclinic_v2
-    user: "${UID}:${GID}"
+    user: "${HOST_UID}:${HOST_GID}"
     ports:
       - "8000:8000"
     volumes:
-      - petclinic_data:/data
+      - /home/rdauser/petclinic_data:/data
     environment:
       - DATABASE_URL=sqlite:////data/petclinic.db
     restart: unless-stopped
