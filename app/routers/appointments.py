@@ -76,7 +76,7 @@ def complete_appointment(appointment_id: int, db: Session = Depends(get_db)):
     if appt.status != AppointmentStatus.scheduled:
         logger.warning(f"Failed to complete appointment {appointment_id}: Status is {appt.status}")
         raise HTTPException(status_code=400, detail=f"Cannot complete a {appt.status} appointment")
-    appt.status = AppointmentStatus.complet
+    appt.status = AppointmentStatus.completed
     db.commit()
     db.refresh(appt)
     logger.info(f"Completed appointment with ID: {appointment_id}")
