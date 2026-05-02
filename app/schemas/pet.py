@@ -23,6 +23,10 @@ class PetUpdate(BaseModel):
     owner_id: Optional[int] = None
 
 
+class OwnershipTransferRequest(BaseModel):
+    new_owner_id: int
+
+
 class PetResponse(PetBase):
     id: int
 
