@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.pet import Pet
 from app.models.owner import Owner
 from app.models.vaccination import Vaccination
-from app.schemas.pet import PetCreate, PetUpdate, PetResponse
+from app.schemas.pet import PetCreate, PetUpdate, PetResponse, OwnershipTransferRequest
 from app.schemas.vaccination import VaccinationCreate, VaccinationUpdate, VaccinationResponse
 
 logger = logging.getLogger(__name__)
@@ -52,6 +52,25 @@ def update_pet(pet_id: int, updates: PetUpdate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(pet)
     logger.info(f"Updated pet with ID: {pet_id}")
+    return pet
+
+
+@router.put("/{pet_id}/transfer", response_model=PetResponse)
+def transfer_pet_ownership(pet_id: int, request: OwnershipTransferRequest, db: Session = Depends(get_db)):
+    pet = db.query(Pet).filter(Pet.id == pet_id).first()
+    if not pet:
+        logger.warning(f"Pet not found for transfer: {pet_id}")
+        raise HTTPException(status_code=404, detail="Pet not found")
+    
+    if not db.query(Owner).filter(Owner.id == request.new_owner_id).first():
+        logger.warning(f"Failed to transfer pet {pet_id}: New owner {request.new_owner_id} not found")
+        raise HTTPException(status_code=404, detail="New owner not found")
+    
+    old_owner_id = pet.owner_id
+    pet.owner_id = request.new_owner_id
+    db.commit()
+    db.refresh(pet)
+    logger.info(f"Transferred pet {pet_id} from owner {old_owner_id} to {request.new_owner_id}")
     return pet
 
 
